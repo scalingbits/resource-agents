@@ -40,7 +40,7 @@
 #
 # replaced ec2metadata command with lookup of IP address in EC2 meta data.
 # the agent is now
-# * independent on any data in the userdata field
+# * independent on any data in the userdata field 
 # * the agent will wotk with multi ENIs
 # * the agent is independent of the SUSE specific ec2metadat command
 #
