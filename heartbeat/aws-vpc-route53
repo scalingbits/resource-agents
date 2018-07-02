@@ -36,7 +36,17 @@
 # Based on code of Markus Guertler (SUSE)
 #
 # Mar. 15, 2017, vers 1.0.2
-
+#######################################################################
+#
+# replaced ec2metadata command with lookup of IP address in EC2 meta data.
+# the agent is now
+# * idependent on any data in the userdata field
+# * The agent will wotk with multi ENIs
+# * the agent is independent of the SUSE specific ec2metadat command
+#
+#
+#  June 29, 2018, vers 1.1 , stsch@amazon.de
+#
 #######################################################################
 # Initialization:
 
@@ -190,7 +200,7 @@ ec2ip_validate() {
 ec2ip_monitor() {
 	ec2ip_validate
 	debugger "function: ec2ip_monitor: check Route53 record "
-	IPADDRESS="$(ec2metadata aws ip | grep local-ipv4 | /usr/bin/awk '{ print $2 }')"
+	//IPADDRESS="$(ec2metadata aws ip | grep local-ipv4 | /usr/bin/awk '{ print $2 }')"
 	ARECORD="$(aws $AWS_PROFILE_OPT route53 list-resource-record-sets --hosted-zone-id $OCF_RESKEY_hostedzoneid --query "ResourceRecordSets[?Name=='$OCF_RESKEY_fullname']" | grep RESOURCERECORDS | /usr/bin/awk '{ print $2 }' )"
 	debugger "function: ec2ip_monitor: found IP address: $ARECORD ."
 	if [ "${ARECORD}" == "${IPADDRESS}" ]; then
@@ -206,7 +216,7 @@ ec2ip_monitor() {
 
 ec2ip_stop() {
 	ocf_log info "EC2: Bringing down Route53 agent. (Will remove ARECORD)"
-	IPADDRESS="$(ec2metadata aws ip | grep local-ipv4 | /usr/bin/awk '{ print $2 }')"
+	//IPADDRESS="$(ec2metadata aws ip | grep local-ipv4 | /usr/bin/awk '{ print $2 }')"
 	ARECORD="$(aws $AWS_PROFILE_OPT route53 list-resource-record-sets --hosted-zone-id $OCF_RESKEY_hostedzoneid --query "ResourceRecordSets[?Name=='$OCF_RESKEY_fullname']" | grep RESOURCERECORDS | /usr/bin/awk '{ print $2 }' )"
 	debugger "function: ec2ip_monitor: found IP address: $ARECORD ."
 	if [ ${ARECORD} != ${IPADDRESS} ]; then
@@ -215,7 +225,7 @@ ec2ip_stop() {
 	else
 		debugger "function: ec2ip_monitor:	ARECORD $ARECORD found"
 		# determine IP address
-		IPADDRESS="$(ec2metadata aws ip | grep local-ipv4 | /usr/bin/awk '{ print $2 }')"
+		//IPADDRESS="$(ec2metadata aws ip | grep local-ipv4 | /usr/bin/awk '{ print $2 }')"
 		# Patch file
 		debugger "function ec2ip_stop: will delete IP address to ${IPADDRESS}"
 		ocf_log info "EC2: Updating Route53 $OCF_RESKEY_hostedzoneid with $IPADDRESS for $OCF_RESKEY_fullname"
@@ -262,7 +272,7 @@ ec2ip_stop() {
 
 ec2ip_start() {
 	# determine IP address
-	IPADDRESS="$(ec2metadata aws ip | grep local-ipv4 | /usr/bin/awk '{ print $2 }')"
+	//IPADDRESS="$(ec2metadata aws ip | grep local-ipv4 | /usr/bin/awk '{ print $2 }')"
 	# Patch file
 	debugger "function ec2ip_start: will update IP address to ${IPADDRESS}"
 	ocf_log info "EC2: Updating Route53 $OCF_RESKEY_hostedzoneid with $IPADDRESS for $OCF_RESKEY_fullname"
@@ -305,6 +315,10 @@ ec2ip_start() {
 }
 
 ###############################################################################
+
+# Determine IP address for DNS entry
+MYMAC="$(curl --noproxy \* http://169.254.169.254/latest/meta-data/network/interfaces/macs/ | head -n 1)"
+IPADDRESS="$(curl --noproxy \* http://169.254.169.254/latest/meta-data/network/interfaces/macs/${MYMAC}local-ipv4s)"
 
 case $__OCF_ACTION in
 	usage|help)
